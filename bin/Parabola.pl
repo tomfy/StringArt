@@ -5,12 +5,12 @@ use Math::Trig qw(pi);
 use Getopt::Long;
 use Graphics::GnuplotIF;
 
-my $width = 1600;
-my $height = 1200;
+
+my $width = 1400;
+my $height = 1000;
 my $S = 28;
 my $n_points = 50;
 my $small = 0.01;
-
 
 { ############################# main ######################################
 
@@ -18,8 +18,9 @@ my $small = 0.01;
   my $persist = 0;
   my $enhanced = 0;
   my $line_width = 1;
-  my $color = undef;
-  my $pt_pair_color_spec = ' lt  rgb "#CC4444" ';
+  my $points_color = ' "#007700" ';
+  my $lines_color = ' "#0000AA" ';
+  my $pt_pair_color = ' "#770000" ';
 
   my $alpha = 0; # to rotate whole parabola. 0 -> horizontal, opening to right.
   my $theta = 30;	     # half of angle between lines, in degrees
@@ -35,14 +36,16 @@ my $small = 0.01;
 	     'npts|n_points=i' => \$n_points,
 	     'isum=i' => \$isum,
 	     'linewidth|line_width|lw=f' => \$line_width, # line thickness for histogram
-	     'color=s' => \$color,
+	     'pts_color=s' => \$points_color,
+	     'lines_color=s' => \$lines_color,
+	     'pt_pair_color=s' => \$pt_pair_color,
 	     'terminal=s' => \$terminal, # x11, qt, at least, work.
 	     'enhanced!' => \$enhanced,
 	    );
 
   $theta *= pi/180;
   $alpha *= pi/180;
-  my $origin = [$width/4, $height/2];
+  my $origin = [$width/5, $height/2];
 
   my $V1 = [cos($theta + $alpha), sin($theta + $alpha)];
   my $V2 = [cos($theta - $alpha), -1.0*sin($theta - $alpha)];
@@ -63,10 +66,13 @@ my $small = 0.01;
   open my $fh_write_pts, ">", "temp_pts_file";
   print $fh_write_pts "$pts_string";
   close $fh_write_pts;
-  my $plot_points =  "'temp_pts_file' u 1:2 with points pt 6 t''";
-  my $plot_lines = "'temp_lines_file' u 1:2:3:4 with vectors nohead t''";
+  my $plot_points =  "'temp_pts_file' u 1:2 with points pt 6  lt rgb $points_color t'' ";
+  # $plot_points .= " lt rgb $points_color ";
+  print STDERR $plot_points, "\n";
+  my $plot_lines = "'temp_lines_file' u 1:2:3:4 with vectors nohead  lt rgb $lines_color t'' ";
   $gnuplotIF->gnuplot_cmd("plot [0:$width][0:$height] $plot_points");
-  getc();
+  my $c = lc getc();
+  exit() if($c eq 'q'  or $c eq 'x');
 
   unlink 'temp_lines_file'; # so when temp_lines_is first opened, below, it is empty.
 
@@ -77,10 +83,11 @@ my $small = 0.01;
     my $pt1 = sum2d($origin, $i1*$S, $V1);
     my $pt2 = sum2d($origin, $i2*$S, $V2);
 
-    my $plot_pt_pair = "'-' u 1:2 with points pt 7 ps 0.6 $pt_pair_color_spec t''\n" . join(" ", @$pt1) . "\n" . join(" ", @$pt2) . "\n" . "e \n";
+    my $plot_pt_pair = "'-' u 1:2 with points pt 7 ps 1  lt rgb $pt_pair_color t'' \n" . join(" ", @$pt1) . "\n" . join(" ", @$pt2) . "\n" . "e \n";
     my $command = "plot  [0:$width][0:$height] " . " $plot_lines , $plot_points , $plot_pt_pair ";
     $gnuplotIF->gnuplot_cmd($command);
-    getc();
+     my $c = lc getc();
+    exit() if($c eq 'q'  or $c eq 'x');
 
     # if (pt_is_in($width, $height, $pt1) > 0  or  pt_is_in($width, $height, $pt2) > 0) {
     if ($lines_drawn <= $max_lines  and  ! line_is_out($width, $height, $pt1, $pt2)) {
@@ -94,7 +101,8 @@ my $small = 0.01;
     } else {
       last;
     }
-    getc();
+    my $c = lc getc();
+    exit() if($c eq 'q'  or $c eq 'x');
   }
 
   $i1 = $isum;
@@ -103,10 +111,11 @@ my $small = 0.01;
     my $pt1 = sum2d($origin, $i1*$S, $V1);
     my $pt2 = sum2d($origin, $i2*$S, $V2);
 
-    my $plot_pt_pair = "'-' u 1:2 with points pt 7 ps 0.6 $pt_pair_color_spec t''\n" . join(" ", @$pt1) . "\n" . join(" ", @$pt2) . "\n" . "e \n";
+    my $plot_pt_pair = "'-' u 1:2 with points pt 7 ps 0.6  lt rgb $pt_pair_color  t''\n" . join(" ", @$pt1) . "\n" . join(" ", @$pt2) . "\n" . "e \n";
     my $command = "plot  [0:$width][0:$height] " . " $plot_lines , $plot_points , $plot_pt_pair ";
     $gnuplotIF->gnuplot_cmd($command);
-    getc();
+     my $c = lc getc();
+    exit() if($c eq 'q'  or $c eq 'x');
 
     #if (pt_is_in($width, $height, $pt1) > 0  or  pt_is_in($width, $height, $pt2) > 0) {
     if ($lines_drawn <= $max_lines  and  ! line_is_out($width, $height, $pt1, $pt2)) {
@@ -120,11 +129,12 @@ my $small = 0.01;
     } else {
       last;
     }
-    getc();
+    my $c = lc getc();
+    exit() if($c eq 'q'  or $c eq 'x');
   }
 
   while (1) {			# exit when 'q' or 'x' entered
-    my $c = getc();
+    my $c = lc getc();
     exit() if($c eq 'q'  or $c eq 'x');
   }
 } ######################################## end of main ###################################################
